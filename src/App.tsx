@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { CoordinateTable } from './components/CoordinateTable';
 import { ExportSheet } from './components/ExportSheet';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import { useWalkTracker } from './hooks/useWalkTracker';
 import type { DistanceUnit } from './types/walk';
 import {
@@ -99,6 +101,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#11181C] flex flex-col">
+      <OfflineIndicator />
+
       {/* 3-Zone Top Navigation Bar (non-sticky on mobile to respect 15% sticky cap) */}
       <header className="bg-white border-b border-[#DDE1DC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
@@ -173,6 +177,8 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            <PWAInstallButton />
+
             {/* Opt-in Test GPS Mode for indoor verification */}
             <label className="inline-flex items-center gap-2 text-xs font-medium text-[#55605B] cursor-pointer select-none min-h-[40px]">
               <input
