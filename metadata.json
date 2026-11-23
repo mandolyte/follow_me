@@ -1,0 +1,6 @@
+{
+  "name": "Follow Me",
+  "description": "A clean GPS walk and hike tracker with 2-second coordinate capture, straight-line path compression, rolling 7-walk storage, and Google Maps export.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
