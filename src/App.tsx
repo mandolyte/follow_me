@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { CoordinateTable } from './components/CoordinateTable';
 import { ExportSheet } from './components/ExportSheet';
-import { WalkMap } from './components/WalkMap';
 import { useWalkTracker } from './hooks/useWalkTracker';
 import type { DistanceUnit } from './types/walk';
 import {
@@ -42,17 +41,8 @@ export default function App() {
 
   const [unit, setUnit] = useState<DistanceUnit>('mi');
   const [exportOpen, setExportOpen] = useState(false);
-  const [quotaExceeded, setQuotaExceeded] = useState(false);
 
-  useEffect(() => {
-    const onQuotaExceeded = () => setQuotaExceeded(true);
-    window.addEventListener('gmp-quota-exceeded', onQuotaExceeded);
-    return () => {
-      window.removeEventListener('gmp-quota-exceeded', onQuotaExceeded);
-    };
-  }, []);
-
-  // Determine which walk's data is displayed in the map, stats, and coordinate table
+  // Determine which walk's data is displayed in telemetry and the coordinate table
   const isViewingLive = active.isRecording;
   const displayedWalk = isViewingLive ? null : selectedWalk;
   const displayedCoordinates = isViewingLive
@@ -80,14 +70,15 @@ export default function App() {
   );
 
   const canExport = displayedCoordinates.length > 0;
+  const latestCoordinate = displayedCoordinates[displayedCoordinates.length - 1] ?? null;
 
-  const mapLabel = isViewingLive
+  const walkLabel = isViewingLive
     ? useSimulatedGps
       ? 'Live Walk (Test GPS)'
       : 'Live Walk'
     : displayedWalk
       ? `Walk #${displayedWalk.walkNumber} · Slot ${displayedWalk.slot} of ${MAX_SAVED_WALKS}`
-      : 'New Walk';
+      : 'No walk selected';
 
   const statusText = active.isRecording
     ? active.gpsStatus === 'acquiring'
@@ -108,24 +99,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#11181C] flex flex-col">
-      {/* Demo Key Runtime Quota Warning Banner */}
-      {quotaExceeded && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
-          <span>
-            Google Maps Platform quota reached. If you are the app owner, visit{' '}
-            <a
-              href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold text-amber-950 hover:text-amber-800"
-            >
-              maps developer site
-            </a>{' '}
-            for instructions to update your account.
-          </span>
-        </div>
-      )}
-
       {/* 3-Zone Top Navigation Bar (non-sticky on mobile to respect 15% sticky cap) */}
       <header className="bg-white border-b border-[#DDE1DC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
@@ -273,8 +246,8 @@ export default function App() {
 
         {/* Primary 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Right/Top on Mobile: Primary Telemetry, Start/Stop/Export Controls, Summary & 7-Walk History */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-5 lg:order-2">
+          {/* Primary Column: Walk Telemetry, Start/Stop/Export Controls, Stop Summary & Rolling 7-Walk History */}
+          <div className="lg:col-span-5 space-y-5">
             {/* Walk Control & Live Metrics Card */}
             <section className="bg-white border border-[#DDE1DC] rounded-2xl p-5 space-y-5">
               <div className="flex items-baseline justify-between gap-2">
@@ -354,18 +327,25 @@ export default function App() {
                 <span>Export Coordinates for Google Maps</span>
               </button>
 
-              {/* Quiet Unboxed Compression Metadata */}
-              <div className="pt-3 border-t border-[#ECEEEB] text-xs text-[#55605B] flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums">
-                <span>{displayedCoordinates.length} coordinates stored</span>
-                <span aria-hidden="true">·</span>
-                <span>{displayedRawCount} GPS samples</span>
-                {compressionPct > 0 && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="text-[#146C43] font-medium">
-                      {compressionPct}% compressed
-                    </span>
-                  </>
+              {/* Quiet Unboxed Compression & Latest Coordinate Metadata */}
+              <div className="pt-3 border-t border-[#ECEEEB] space-y-1 text-xs text-[#55605B] tabular-nums">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span>{displayedCoordinates.length} coordinates stored</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{displayedRawCount} GPS samples</span>
+                  {compressionPct > 0 && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span className="text-[#146C43] font-medium">
+                        {compressionPct}% compressed
+                      </span>
+                    </>
+                  )}
+                </div>
+                {latestCoordinate && (
+                  <p className="font-mono text-[11px] text-[#6D7873]">
+                    Latest fix: {latestCoordinate.lat.toFixed(6)}, {latestCoordinate.lng.toFixed(6)}
+                  </p>
                 )}
               </div>
             </section>
@@ -508,22 +488,14 @@ export default function App() {
             </section>
           </div>
 
-          {/* Left Column on Desktop: Live Google Map + Compressed Coordinates Table */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-5 lg:order-1">
-            <WalkMap
+          {/* Right Column on Desktop: Compressed Coordinates Log ready for Google Maps export */}
+          <div id="coordinates" className="lg:col-span-7">
+            <CoordinateTable
               coordinates={displayedCoordinates}
-              isRecording={active.isRecording}
-              quotaExceeded={quotaExceeded}
-              walkLabel={mapLabel}
+              rawPointCount={displayedRawCount}
+              title="Compressed Coordinates"
+              walkLabel={walkLabel}
             />
-
-            <div id="coordinates">
-              <CoordinateTable
-                coordinates={displayedCoordinates}
-                rawPointCount={displayedRawCount}
-                title="Compressed Coordinates"
-              />
-            </div>
           </div>
         </div>
       </main>

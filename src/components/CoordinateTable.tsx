@@ -5,20 +5,24 @@ interface CoordinateTableProps {
   coordinates: Coordinate[];
   rawPointCount: number;
   title: string;
+  walkLabel?: string;
 }
 
 export function CoordinateTable({
   coordinates,
   rawPointCount,
   title,
+  walkLabel,
 }: CoordinateTableProps) {
   const savedPct = calculateCompressionPercent(rawPointCount, coordinates.length);
 
   return (
     <section className="bg-white border border-[#DDE1DC] rounded-2xl overflow-hidden">
-      <div className="px-4 py-3.5 border-b border-[#ECEEEB] flex flex-wrap items-center justify-between gap-2">
+      <div className="px-5 py-4 border-b border-[#ECEEEB] flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h2 className="text-base font-semibold text-[#11181C]">{title}</h2>
+          <h2 className="font-display text-base font-semibold text-[#11181C]">
+            {title}
+          </h2>
           <p className="text-xs text-[#55605B] mt-0.5 tabular-nums">
             {coordinates.length} stored{' '}
             {coordinates.length === 1 ? 'coordinate' : 'coordinates'}
@@ -31,14 +35,17 @@ export function CoordinateTable({
             )}
           </p>
         </div>
+        {walkLabel && (
+          <span className="text-xs text-[#55605B] tabular-nums">{walkLabel}</span>
+        )}
       </div>
 
       {coordinates.length === 0 ? (
-        <div className="px-4 py-10 text-center text-sm text-[#55605B]">
+        <div className="px-5 py-14 text-center text-sm text-[#55605B]">
           Coordinates captured every 2 seconds will appear here once you press Start.
         </div>
       ) : (
-        <div className="overflow-x-auto max-h-[340px] overflow-y-auto">
+        <div className="overflow-x-auto max-h-[540px] overflow-y-auto">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-[#F7F7F5] border-b border-[#ECEEEB] text-xs font-medium text-[#55605B]">
               <tr>
